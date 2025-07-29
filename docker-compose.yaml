@@ -1,0 +1,48 @@
+services:
+  db:
+    image: mysql:5.7
+    command: --init-file /var/lib/init.sql
+    container_name: db
+    restart: always
+    tty: true
+    volumes:
+      - ./mysql/init.sql:/var/lib/init.sql
+    environment:
+      - MYSQL_DATABASE=baseDesafioNode
+      - MYSQL_ROOT_PASSWORD=root
+    networks:
+      - rede-desafioNode
+    expose:
+      - 3306
+
+  node:
+    build:
+      context: ./node
+    container_name: node
+    tty: true
+    ports: 
+      - "3000:3000"
+    volumes:
+      - ./node/app:/usr/src/app
+    networks:
+      - rede-desafioNode
+    depends_on:
+      - db
+    command: sh -c "npm install && npm install mysql --save && node index.js"    
+
+  nginx:
+    build:
+      context: ./nginx
+    container_name: nginx-proxy
+    tty: true
+    ports: 
+    - "8080:80"
+    networks:
+    - rede-desafioNode
+    depends_on:
+      - db
+      - node    
+
+networks:
+  rede-desafioNode:
+    driver: bridge
