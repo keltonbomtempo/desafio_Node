@@ -15,12 +15,16 @@ services:
       - rede-desafioNode
     expose:
       - 3306
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   node:
     build:
       context: ./node
     container_name: node
-    entrypoint: dockerize -wait tcp://db:3306 -timeout 40s docker-entrypoint.sh
     tty: true
     ports: 
       - "3000:3000"
@@ -29,8 +33,9 @@ services:
     networks:
       - rede-desafioNode
     depends_on:
-      - db
-    command: sh -c "npm install && npm install mysql --save && node index.js"    
+      db:
+        condition: service_healthy
+    command: sh -c "npm install && npm install mysql --save && node index.js"
 
   nginx:
     build:
